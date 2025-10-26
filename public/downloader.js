@@ -19,6 +19,8 @@ async function loadApiKey() {
   }
 }
 
+await loadApiKey();
+
 
 
 class Downloader {
