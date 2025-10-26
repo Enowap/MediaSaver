@@ -442,8 +442,8 @@
     showFloatingMessage('Mendapatkan shortlink...');
 
     // ENCODE URL agar aman di query string
-    const encodedMediaUrl = encodeURIComponent(mediaUrl);
-    const encodedOriginalUrl = encodeURIComponent(originalUrl || '');
+    const encodedMediaUrl =(mediaUrl);
+    const encodedOriginalUrl =(originalUrl || '');
 
     // LOG: Lihat URL yang benar-benar dikirim ke proxy
     const proxyUrl = `/proxy/get.php?send=${encodedMediaUrl}&source=${encodedOriginalUrl}`;
