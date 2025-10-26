@@ -9,7 +9,7 @@
   <link rel="preconnect" href="https://www.facebook.com">
   <link rel="preconnect" href="https://www.instagram.com">
   <style>
-    /* ... (CSS Anda di sini, tidak ada perubahan) ... */
+    /* ... (CSS Anda di sini) ... */
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body {
       font-family: 'Poppins', sans-serif;
@@ -261,7 +261,7 @@
       transform: translate(-50%, -50%) scale(1.1);
     }
     .play-icon::before {
-      content: '▶'; /* Ganti 'Play' dengan simbol yang lebih umum */
+      content: '▶';
       font-size: 30px;
       color: #fff;
     }
@@ -302,6 +302,7 @@
   <div class="support-container">
     <h2>Support:</h2>
     <div class="social-icons">
+      <!-- Ikon media sosial (dibiarkan statis) -->
       <a href="https://x.com" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X"></a>
       <a href="https://instagram.com" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/instagram.svg" alt="Instagram"></a>
       <a href="https://facebook.com" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook"></a>
@@ -320,7 +321,7 @@
         <input type="url" id="urlInput" placeholder="Masukkan URL Facebook / Instagram / TikTok" required>
         <button type="button" id="pasteBtn" class="paste-icon">Paste</button>
       </div>
-      <button type="submit" class="btn btn-download">Mulai Download</button>
+      <button type="submit" class="btn btn-download" id="submitBtn">Mulai Download</button>
     </form>
 
     <div id="progressContainer">
@@ -330,6 +331,163 @@
     <div id="result"></div>
   </div>
 
-  <script type="module" src="/downloader.js"></script>
+  <!-- Client-Side Script -->
+  <script>
+    const form = document.getElementById('downloadForm');
+    const urlInput = document.getElementById('urlInput');
+    const pasteBtn = document.getElementById('pasteBtn');
+    const resultDiv = document.getElementById('result');
+    const submitBtn = document.getElementById('submitBtn');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressText = document.getElementById('progressText');
+    let progressInterval;
+
+    // --- Utility Functions ---
+
+    function showMessage(text, isError = false) {
+      resultDiv.innerHTML = `<p class="${isError ? 'error' : 'message'}">${text}</p>`;
+    }
+
+    function startProgress() {
+      let currentProgress = 0;
+      progressContainer.style.display = 'block';
+      submitBtn.disabled = true;
+      submitBtn.textContent = 'Memproses...';
+      
+      progressInterval = setInterval(() => {
+        if (currentProgress < 95) {
+          currentProgress += 1;
+        } else if (currentProgress < 98) {
+          // Lambat di akhir untuk menunggu API
+          currentProgress += 0.5;
+        }
+        document.getElementById('progressBar').style.width = `${currentProgress}%`;
+        progressText.textContent = `Mengambil data (${Math.floor(currentProgress)}%). Harap tunggu.`;
+      }, 500);
+    }
+
+    function stopProgress(success = true) {
+      clearInterval(progressInterval);
+      submitBtn.disabled = false;
+      submitBtn.textContent = 'Mulai Download';
+      progressContainer.style.display = 'none';
+      progressText.textContent = '';
+
+      if (success) {
+        document.getElementById('progressBar').style.width = '100%';
+      } else {
+        document.getElementById('progressBar').style.width = '0%';
+      }
+    }
+
+    function renderResult(data) {
+      if (!data.media || data.media.length === 0) {
+        showMessage('Media tidak ditemukan atau URL tidak valid.', true);
+        return;
+      }
+      
+      const mediaItem = data.media[0];
+      const mediaUrl = mediaItem.url;
+      const type = mediaItem.type || (mediaUrl.includes('mp4') ? 'video' : 'image');
+      const caption = data.caption || '';
+      const previewUrl = data.preview || mediaUrl;
+
+      let html = '';
+
+      // Tampilkan Caption
+      if (caption) {
+        html += `<p id="captionText">${caption}</p>`;
+        html += `<button class="copy-btn" onclick="copyText('${caption.replace(/'/g, "\\'")}')">Salin Caption</button>`;
+      }
+      
+      // Tampilkan Media Preview (Video/Image)
+      if (type === 'video') {
+        html += `
+          <div class="video-wrapper">
+            <video id="videoPlayer" src="${mediaUrl}" controls poster="${previewUrl}" style="display:block;"></video>
+            <!-- Tautan download terpisah -->
+            <a href="${mediaUrl}" class="download-btn" download>Download Video</a>
+          </div>
+        `;
+      } else {
+        // Asumsi image/document/audio
+        html += `
+          <div class="image-wrapper">
+            <img id="imagePreview" src="${mediaUrl}" alt="Media Preview" class="thumbnail" style="display:block;">
+            <a href="${mediaUrl}" class="download-btn" download>Download Media</a>
+          </div>
+        `;
+      }
+
+      resultDiv.innerHTML = html;
+    }
+
+    function copyText(text) {
+      const el = document.createElement('textarea');
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      try {
+        const successful = document.execCommand('copy');
+        showMessage(successful ? 'Teks berhasil disalin!' : 'Gagal menyalin teks.', !successful);
+      } catch (err) {
+        showMessage('Browser Anda tidak mendukung penyalinan otomatis.', true);
+      }
+      document.body.removeChild(el);
+      // Hapus pesan setelah 3 detik
+      setTimeout(() => { resultDiv.innerHTML = ''; }, 3000);
+    }
+
+    // --- Event Listeners ---
+
+    pasteBtn.addEventListener('click', async () => {
+      try {
+        const text = await navigator.clipboard.readText();
+        urlInput.value = text.trim();
+        showMessage('Tautan berhasil ditempel.', false);
+      } catch (err) {
+        showMessage('Akses clipboard ditolak atau tidak didukung.', true);
+      }
+    });
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      resultDiv.innerHTML = '';
+      const url = urlInput.value.trim();
+
+      if (!url) {
+        showMessage('Silakan masukkan URL yang valid.', true);
+        return;
+      }
+
+      startProgress();
+
+      try {
+        const response = await fetch('/api/download', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ url })
+        });
+
+        const data = await response.json();
+        stopProgress(true);
+
+        if (data.success) {
+          renderResult(data.data);
+        } else {
+          showMessage(`Gagal Download: ${data.error || 'Terjadi kesalahan tidak diketahui.'}`, true);
+        }
+
+      } catch (error) {
+        stopProgress(false);
+        showMessage(`Koneksi Gagal. Server tidak merespons.`, true);
+        console.error('Fetch Error:', error);
+      }
+    });
+
+  </script>
+  <!-- Skrip di atas menggantikan <script type="module" src="/downloader.js"></script> -->
 </body>
 </html>
