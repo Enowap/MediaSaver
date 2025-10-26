@@ -1,31 +1,24 @@
-
 // public/downloader.js
-// ESM Version – Browser-only (no Node.js)
-console.log('Downloader.js (ESM) telah dimuat');
+// ✅ ESM (Browser-only, tanpa require, tanpa Node.js)
+console.log("🟢 Downloader.js (Client-Side) dimuat");
 
-let API_KEY = ""; // default kosong
+let API_KEY = ""; // Akan diisi otomatis dari server
+const API_BASE = "https://api.ferdev.my.id/downloader";
 
-const fs = require('fs').promises;
-const path = require('path');
-const { URL } = require('url');
-const { API_KEY } = require('./apikey');
-const API_BASE = 'https://api.ferdev.my.id/downloader';
-
-
-
-// Muat API_KEY dari server
+// === Fungsi untuk memuat API_KEY dari server ===
 async function loadApiKey() {
   try {
     const res = await fetch("/api/config");
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+
     API_KEY = data.API_KEY || "";
-    console.log("✅ API_KEY berhasil dimuat dari server:", API_KEY ? "OK" : "TIDAK ADA");
+    console.log("✅ API_KEY berhasil dimuat:", API_KEY ? "TERISI" : "KOSONG");
   } catch (err) {
-    console.error("❌ Gagal memuat API_KEY:", err);
+    console.error("❌ Gagal memuat API_KEY:", err.message);
   }
 }
 
-await loadApiKey();
 
 
 class Downloader {
@@ -154,6 +147,10 @@ class Downloader {
       return { success: false, error: 'Gagal menghubungi API: ' + err.message };
     }
   }
+
+
+
+
 
   // --- GET HANDLER ---
   getHandler(platform) {
@@ -340,6 +337,11 @@ class Downloader {
   }
 }
 
-// EKSPOR KE BROWSER
+
+// === Ekspor ke browser ===
 window.Downloader = Downloader;
+
+// === Muat API_KEY saat halaman dimuat ===
+document.addEventListener("DOMContentLoaded", loadApiKey);
+
 export default Downloader;
