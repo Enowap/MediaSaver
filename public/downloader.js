@@ -1,30 +1,12 @@
-// public/downloader.js
-// ✅ ESM (Browser-only, tanpa require, tanpa Node.js)
-console.log("🟢 Downloader.js (Client-Side) dimuat");
+// downloader.js (SISI SERVER - di Root Folder)
+import fetch from "node-fetch";
 
-let API_KEY = ""; // Akan diisi otomatis dari server
 const API_BASE = "https://api.ferdev.my.id/downloader";
 
-// === Fungsi untuk memuat API_KEY dari server ===
-async function loadApiKey() {
-  try {
-    const res = await fetch("/api/config");
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
-    const data = await res.json();
-
-    API_KEY = data.API_KEY || "";
-    console.log("✅ API_KEY berhasil dimuat:", API_KEY ? "TERISI" : "KOSONG");
-  } catch (err) {
-    console.error("❌ Gagal memuat API_KEY:", err.message);
-  }
-}
-
-await loadApiKey();
-
-
-
 class Downloader {
-  constructor() {}
+  constructor() {
+    // Tidak perlu API_KEY di sini
+  }
 
   // --- UTILITY ---
   sanitizeFileName(filename) {
@@ -52,7 +34,8 @@ class Downloader {
   }
 
   // --- DETECT PLATFORM ---
-  detectPlatform(videoUrl) {
+  // ✅ DIPERBAIKI: Terima API_KEY sebagai argumen
+  detectPlatform(videoUrl, API_KEY) {
     const url = videoUrl.toLowerCase();
     const platforms = [
       { check: ['instagram.com'], name: 'Instagram', endpoint: 'instagram' },
@@ -73,6 +56,7 @@ class Downloader {
       if (p.check.some(domain => url.includes(domain))) {
         return {
           platform: p.name,
+          // ✅ DIPERBAIKI: Gunakan API_KEY yang diterima
           apiUrl: `${API_BASE}/${p.endpoint}?link=${encodeURIComponent(videoUrl)}&apikey=${API_KEY}`
         };
       }
@@ -81,16 +65,18 @@ class Downloader {
   }
 
   // --- MAIN DOWNLOAD FUNCTION ---
-  async download(videoUrl) {
-    const platformInfo = this.detectPlatform(videoUrl);
+  // ✅ DIPERBAIKI: Terima API_KEY sebagai argumen
+  async download(videoUrl, API_KEY) {
+    // ✅ DIPERBAIKI: Kirim API_KEY ke detectPlatform
+    const platformInfo = this.detectPlatform(videoUrl, API_KEY);
     if (!platformInfo) {
       return { success: false, error: 'Platform tidak dikenali.' };
     }
 
+    // Kode Anda di bawah ini sudah benar
     try {
       console.log(`[DOWNLOADER] Mengambil data dari: ${platformInfo.platform}`);
       
-      // SATU KALI FETCH → SATU KALI const response
       const response = await fetch(platformInfo.apiUrl);
       if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
@@ -150,11 +136,8 @@ class Downloader {
     }
   }
 
-
-
-
-
   // --- GET HANDLER ---
+  // ... (Tidak ada perubahan di sini) ...
   getHandler(platform) {
     const handlers = {
       'Instagram': this.handleInstagram.bind(this),
@@ -174,6 +157,8 @@ class Downloader {
   }
 
   // --- HANDLERS ---
+  // ... (Semua fungsi 'handle' Anda sudah benar) ...
+  // ... (handleFacebook, handleInstagram, dll.) ...
   async handleFacebook(data) {
     if (!data || !data.success) return { success: false, error: 'Gagal mendapatkan data.' };
     const d = data.data || data;
@@ -327,10 +312,12 @@ class Downloader {
     return { success: true, type: 'video', media: [{ url: videoUrl, type: 'video' }], caption, thumbnail };
   }
 
+
   // --- UTILS ---
+  // ... (Tidak ada perubahan di sini) ...
   escapeHtml(text) {
     if (typeof text !== 'string') return '';
-    return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return text.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
   }
 
   escapeMarkdown(text) {
@@ -339,11 +326,9 @@ class Downloader {
   }
 }
 
-
-// === Ekspor ke browser ===
-window.Downloader = Downloader;
-
-// === Muat API_KEY saat halaman dimuat ===
-document.addEventListener("DOMContentLoaded", loadApiKey);
-
+// ✅ DIPERBAIKI: Ekspor sebagai default untuk Node.js (sesuai dengan server.js)
 export default Downloader;
+
+// ❌ DIHAPUS: Kode di bawah ini hanya untuk browser dan akan menyebabkan error di server
+// window.Downloader = Downloader;
+// document.addEventListener("DOMContentLoaded", loadApiKey);
