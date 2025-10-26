@@ -9,6 +9,9 @@ import { fileURLToPath } from "url";
 
 dotenv.config();
 
+console.log("🔐 API_KEY status:", process.env.API_KEY ? "Terdeteksi" : "TIDAK TERDETEKSI");
+
+
 const API_KEY = process.env.API_KEY; // ✅ Ambil dari Environment Vercel
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
