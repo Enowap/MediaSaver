@@ -2,7 +2,7 @@
 import express from "express";
 import path from "path";
 import cors from "cors";
-import Downloader from "./downloader.js";
+import Downloader from "./downloader.js"; // Ini adalah file sisi SERVER Anda
 import fetch from "node-fetch";
 import { fileURLToPath } from "url";
 
@@ -15,6 +15,7 @@ const downloader = new Downloader();
 // === Middleware ===
 app.use(cors());
 app.use(express.json());
+// Pastikan ini mengarah ke folder yang benar tempat index.html Anda berada
 app.use(express.static(path.join(__dirname, "public")));
 
 // === Cek status API_KEY di log (tidak dikirim ke client) ===
@@ -24,19 +25,19 @@ if (!process.env.API_KEY) {
   console.log("✅ API_KEY berhasil terdeteksi di environment.");
 }
 
-// === API CONFIG (GET, bukan POST) ===
-// Ini endpoint agar client tahu bahwa server berjalan, 
-// tapi tanpa menampilkan API_KEY ke publik!
+// === API CONFIG (GET) ===
+// Endpoint ini HANYA untuk mengecek apakah server hidup.
+// JANGAN PERNAH MENGIRIM API_KEY KE KLIEN.
 app.get("/api/config", (req, res) => {
-  const apiKey = process.env.API_KEY || "❌ Tidak ditemukan di environment";
   res.json({
     status: "ok",
     message: "Server berjalan dengan aman 🔐",
-    apiKey: apiKey
+    // apiKey: apiKey <--- DIHAPUS, INI SANGAT BERBAHAYA
   });
 });
 
 // === API ENDPOINT: /api/download ===
+// Ini adalah endpoint yang akan dipanggil oleh klien
 app.post("/api/download", async (req, res) => {
   const { url } = req.body;
   const API_KEY = process.env.API_KEY;
@@ -51,6 +52,7 @@ app.post("/api/download", async (req, res) => {
 
   try {
     console.log("[SERVER] Mengunduh:", url);
+    // Memanggil file downloader.js sisi SERVER Anda
     const result = await downloader.download(url.trim(), API_KEY);
 
     if (!result || !result.success) {
@@ -88,6 +90,12 @@ app.post("/api/download", async (req, res) => {
     res.status(500).json({ success: false, error: "Server error: " + err.message });
   }
 });
+
+
+
+
+
+
 
 // === PROXY UNTUK SHORTLINK ===
 app.get("/proxy/get.php", async (req, res) => {
@@ -147,7 +155,10 @@ app.get("/proxy/get.php", async (req, res) => {
   }
 });
 
+
+
 // === Serve halaman utama ===
+// Pastikan ini mengarah ke file HTML utama Anda
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
