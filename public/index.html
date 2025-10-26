@@ -367,6 +367,30 @@
 
     // --- Utility Functions ---
 
+
+
+function extractValidUrl(text) {
+      const match = text.match(/(https?:\/\/(?:www\.|vm\.)?(facebook\.com|instagram\.com|tiktok\.com|vm\.tiktok\.com|twitter\.com|x\.com)\/[^\s"']+)/i);
+      return match ? match[0].replace(/[.,!?]+$/, '').trim() : null;
+    }
+
+    // === PASTE ===
+    document.getElementById('pasteBtn').addEventListener('click', async () => {
+      const input = document.getElementById('urlInput');
+      const result = document.getElementById('result');
+      try {
+        const text = await navigator.clipboard.readText();
+        const url = extractValidUrl(text);
+        if (!url) throw new Error('URL tidak valid.');
+        input.value = url;
+        result.innerHTML = `<p style="color:#00f2ff">URL valid: ${url}</p>`;
+      } catch {
+        result.innerHTML = '<p class="error">Gagal menempelkan URL.</p>';
+      }
+    });
+
+
+
     function showMessage(text, isError = false) {
       resultDiv.innerHTML = `<p class="${isError ? 'error' : 'message'}">${text}</p>`;
     }
