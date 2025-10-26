@@ -1,6 +1,6 @@
 import express from "express";
 import path from "path";
-const cors = require('cors');           // TAMBAHKAN INI
+import cors from "cors";
 import Downloader from "./downloader.js"; 
 // import fetch from "node-fetch"; // ❌ Dihapus jika sudah ada di downloader.js
 import { fileURLToPath } from "url";
