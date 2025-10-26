@@ -1,8 +1,14 @@
-const express = require("express");
-const path = require("path");
-const cors = require("cors");
-const Downloader = require("./downloader");
-const { API_KEY } = require("./apikey");
+import express from "express";
+import path from "path";
+import cors from "cors";
+import Downloader from "./downloader.js"; // pastikan ada ekstensi .js
+import dotenv from "dotenv";
+import { fileURLToPath } from "url";
+
+dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 const app = express();
 const downloader = new Downloader();
@@ -10,7 +16,7 @@ const downloader = new Downloader();
 // Middleware
 app.use(cors());
 app.use(express.json());
-app.use(express.static("public"));
+app.use(express.static(path.join(__dirname, "public")));
 
 // === API ENDPOINT: /api/download ===
 app.post("/api/download", async (req, res) => {
@@ -123,8 +129,5 @@ app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-// ⛔ Hapus app.listen() saat di Vercel
-// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
-
 // ✅ Export Express app ke Vercel
-module.exports = app;
+export default app;
