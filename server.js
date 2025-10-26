@@ -1,9 +1,8 @@
-// server.js
 import express from "express";
 import path from "path";
 import cors from "cors";
-import Downloader from "./downloader.js"; // Ini adalah file sisi SERVER Anda
-import fetch from "node-fetch";
+import Downloader from "./downloader.js"; 
+// import fetch from "node-fetch"; // ❌ Dihapus jika sudah ada di downloader.js
 import { fileURLToPath } from "url";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -15,10 +14,11 @@ const downloader = new Downloader();
 // === Middleware ===
 app.use(cors());
 app.use(express.json());
-// Pastikan ini mengarah ke folder yang benar tempat index.html Anda berada
-app.use(express.static(path.join(__dirname, "public")));
 
-// === Cek status API_KEY di log (tidak dikirim ke client) ===
+// ❌ DIHAPUS/DIKOMENTARI: Biarkan Vercel menangani file statis (public)
+// app.use(express.static(path.join(__dirname, "public")));
+
+// === Cek status API_KEY di log (Sangat Benar) ===
 if (!process.env.API_KEY) {
   console.warn("❌ Environment variable API_KEY tidak ditemukan di Vercel!");
 } else {
@@ -26,21 +26,17 @@ if (!process.env.API_KEY) {
 }
 
 // === API CONFIG (GET) ===
-// Endpoint ini HANYA untuk mengecek apakah server hidup.
-// JANGAN PERNAH MENGIRIM API_KEY KE KLIEN.
 app.get("/api/config", (req, res) => {
   res.json({
     status: "ok",
     message: "Server berjalan dengan aman 🔐",
-    // apiKey: apiKey <--- DIHAPUS, INI SANGAT BERBAHAYA
   });
 });
 
-// === API ENDPOINT: /api/download ===
-// Ini adalah endpoint yang akan dipanggil oleh klien
+// === API ENDPOINT: /api/download (Sangat Benar) ===
 app.post("/api/download", async (req, res) => {
   const { url } = req.body;
-  const API_KEY = process.env.API_KEY;
+  const API_KEY = process.env.API_KEY; // ✅ API KEY diambil di sini
 
   if (!API_KEY) {
     return res.status(500).json({ success: false, error: "API Key tidak tersedia di server." });
@@ -52,7 +48,7 @@ app.post("/api/download", async (req, res) => {
 
   try {
     console.log("[SERVER] Mengunduh:", url);
-    // Memanggil file downloader.js sisi SERVER Anda
+    // ✅ API_KEY DITERUSKAN SEBAGAI ARGUMEN KEDUA
     const result = await downloader.download(url.trim(), API_KEY);
 
     if (!result || !result.success) {
@@ -97,17 +93,17 @@ app.post("/api/download", async (req, res) => {
 
 
 
-// === PROXY UNTUK SHORTLINK ===
+// === PROXY UNTUK SHORTLINK (Lanjutan) ===
 app.get("/proxy/get.php", async (req, res) => {
   const { send, source } = req.query;
+  const targetUrl = `https://shtl.pw/getmylink/get.php?send=${send}&source=${source || ""}`;
 
   if (!send) {
     return res.status(400).json({ status: "error", message: "Missing 'send' parameter." });
   }
 
-  const targetUrl = `https://shtl.pw/getmylink/get.php?send=${send}&source=${source || ""}`;
-
   try {
+    const fetch = (await import('node-fetch')).default; // Menggunakan dynamic import untuk fetch, jaga-jaga
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 15000);
 
@@ -158,10 +154,10 @@ app.get("/proxy/get.php", async (req, res) => {
 
 
 // === Serve halaman utama ===
-// Pastikan ini mengarah ke file HTML utama Anda
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "public", "index.html"));
-});
+// ❌ DIHAPUS/DIKOMENTARI: Vercel.json sudah menanganinya
+// app.get("/", (req, res) => {
+//   res.sendFile(path.join(__dirname, "public", "index.html"));
+// });
 
 // ✅ Export Express app ke Vercel
 export default app;
