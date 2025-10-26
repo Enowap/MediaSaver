@@ -5,6 +5,9 @@ const { URL } = require('url');
 const API_KEY = process.env.API_KEY;
 const API_BASE = 'https://api.ferdev.my.id/downloader';
 
+console.log('🟢 Downloader.js telah berjalan'); // ✅ Tambahkan log ini
+
+
 class Downloader {
     constructor() {}
 
