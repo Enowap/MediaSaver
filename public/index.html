@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="id">
 <head>
@@ -436,49 +435,69 @@
 
     // === SHORTLINK LOGIC ===
     async function getShortlink(mediaUrl, originalUrl) {
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 15000);
 
-      try {
-        showFloatingMessage('Mendapatkan shortlink...');
-        const proxyUrl = `/proxy/get.php?send=${(mediaUrl)}&source=${(originalUrl)}`;
+  try {
+    showFloatingMessage('Mendapatkan shortlink...');
 
-        const response = await fetch(proxyUrl, {
-          method: 'GET',
-          headers: {
-            'User-Agent': 'Mozilla/5.0 (compatible; MediaSaverBot/1.0)',
-            'Referer': 'https://shtl.pw'
-          },
-          signal: controller.signal
-        });
+    // ENCODE URL agar aman di query string
+    const encodedMediaUrl = encodeURIComponent(mediaUrl);
+    const encodedOriginalUrl = encodeURIComponent(originalUrl || '');
 
-        clearTimeout(timeout);
+    // LOG: Lihat URL yang benar-benar dikirim ke proxy
+    const proxyUrl = `/proxy/get.php?send=${encodedMediaUrl}&source=${encodedOriginalUrl}`;
+    console.log('[DEBUG] Request shortlink →', proxyUrl);
+    console.log('[DEBUG] mediaUrl (raw):', mediaUrl);
+    console.log('[DEBUG] originalUrl (raw):', originalUrl);
 
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+    const response = await fetch(proxyUrl, {
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (compatible; MediaSaverBot/1.0)',
+        'Referer': 'https://shtl.pw'
+      },
+      signal: controller.signal
+    });
 
-        const contentType = response.headers.get('content-type') || '';
-        if (contentType.includes('application/json')) {
-          const data = await response.json();
-          if (data.status === 'success' && data.url) {
-            showFloatingMessage('Shortlink berhasil!');
-            return data.url;
-          }
-          throw new Error(data.message || 'Gagal shortlink');
-        } else if (contentType.includes('video/') || contentType.includes('octet-stream')) {
-          const blob = await response.blob();
-          showFloatingMessage('Video langsung (tanpa shortlink)');
-          return URL.createObjectURL(blob);
-        } else {
-          throw new Error('Tipe konten tidak didukung');
-        }
-      } catch (err) {
-        clearTimeout(timeout);
-        if (err.name !== 'AbortError') {
-          showFloatingMessage(`Shortlink gagal: ${err.message}`, true);
-        }
-        return mediaUrl; // fallback ke URL asli
+    clearTimeout(timeout);
+
+    // LOG: Status response dari proxy
+    console.log('[DEBUG] Response status:', response.status);
+    console.log('[DEBUG] Response headers:', Object.fromEntries(response.headers));
+
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    const contentType = response.headers.get('content-type') || '';
+    console.log('[DEBUG] Content-Type:', contentType);
+
+    if (contentType.includes('application/json')) {
+      const data = await response.json();
+      console.log('[DEBUG] JSON Response:', data);
+
+      if (data.status === 'success' && data.url) {
+        showFloatingMessage('Shortlink berhasil!');
+        return data.url;
       }
+      throw new Error(data.message || 'Gagal shortlink');
+    } else if (contentType.includes('video/') || contentType.includes('octet-stream')) {
+      const blob = await response.blob();
+      console.log('[DEBUG] Video blob size:', blob.size, 'bytes');
+      showFloatingMessage('Video langsung (tanpa shortlink)');
+      return URL.createObjectURL(blob);
+    } else {
+      throw new Error('Tipe konten tidak didukung');
     }
+  } catch (err) {
+    clearTimeout(timeout);
+    console.error('[ERROR] Shortlink failed:', err.message, err.stack);
+
+    if (err.name !== 'AbortError') {
+      showFloatingMessage(`Shortlink gagal: ${err.message}`, true);
+    }
+    return mediaUrl; // fallback ke URL asli
+  }
+}
 
     // === RENDER RESULT ===
     async function renderResult(data) {
