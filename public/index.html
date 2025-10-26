@@ -226,7 +226,7 @@
       border-radius: 8px;
     }
 
-    .video-wrapper {
+    .video-wrapper, .image-wrapper {
       position: relative;
       margin-top: 20px;
       border-radius: 12px;
@@ -286,6 +286,27 @@
       display: none;
     }
 
+    .floating-message {
+        position: fixed;
+        bottom: 20px;
+        left: 50%;
+        transform: translateX(-50%);
+        background-color: #4CAF50;
+        color: white;
+        padding: 12px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        z-index: 1000;
+        opacity: 0;
+        transition: opacity 0.5s ease;
+    }
+    .floating-message.error {
+        background-color: #ff6f61;
+    }
+    .floating-message.show {
+        opacity: 1;
+    }
+
     @media (max-width: 480px) {
       body { padding: 30px 15px; gap: 20px; }
       .container { padding: 20px; }
@@ -302,7 +323,6 @@
   <div class="support-container">
     <h2>Support:</h2>
     <div class="social-icons">
-      <!-- Ikon media sosial (dibiarkan statis) -->
       <a href="https://x.com" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/x.svg" alt="X"></a>
       <a href="https://instagram.com" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/instagram.svg" alt="Instagram"></a>
       <a href="https://facebook.com" target="_blank"><img src="https://cdn.jsdelivr.net/gh/simple-icons/simple-icons/icons/facebook.svg" alt="Facebook"></a>
@@ -331,7 +351,8 @@
     <div id="result"></div>
   </div>
 
-  <!-- Client-Side Script -->
+  <div id="floatingMessage" class="floating-message"></div>
+
   <script>
     const form = document.getElementById('downloadForm');
     const urlInput = document.getElementById('urlInput');
@@ -340,12 +361,31 @@
     const submitBtn = document.getElementById('submitBtn');
     const progressContainer = document.getElementById('progressContainer');
     const progressText = document.getElementById('progressText');
+    const floatingMessageDiv = document.getElementById('floatingMessage'); // Tambahkan elemen ini
     let progressInterval;
+    let floatingMessageTimeout; // Untuk mengelola timeout pesan mengambang
 
     // --- Utility Functions ---
 
     function showMessage(text, isError = false) {
       resultDiv.innerHTML = `<p class="${isError ? 'error' : 'message'}">${text}</p>`;
+    }
+    
+    // Fungsi untuk menampilkan pesan mengambang
+    function showFloatingMessage(message, isError = false) {
+        clearTimeout(floatingMessageTimeout);
+        floatingMessageDiv.textContent = message;
+        floatingMessageDiv.className = 'floating-message show'; // Reset dan tampilkan
+        if (isError) {
+            floatingMessageDiv.classList.add('error');
+        } else {
+            floatingMessageDiv.classList.remove('error');
+        }
+
+        // Sembunyikan setelah 3 detik
+        floatingMessageTimeout = setTimeout(() => {
+            floatingMessageDiv.classList.remove('show');
+        }, 3000);
     }
 
     function startProgress() {
@@ -380,7 +420,7 @@
       }
     }
 
-    function renderResult(data) {
+    async function renderResult(data) {
       if (!data.media || data.media.length === 0) {
         showMessage('Media tidak ditemukan atau URL tidak valid.', true);
         return;
@@ -391,21 +431,77 @@
       const type = mediaItem.type || (mediaUrl.includes('mp4') ? 'video' : 'image');
       const caption = data.caption || '';
       const previewUrl = data.preview || mediaUrl;
+      const url = urlInput.value.trim(); // Dapatkan URL asli dari input
 
       let html = '';
+      let shortlink = mediaUrl; // Default ke mediaUrl
+
+      // Deklarasikan AbortController untuk shortlink request
+      const controller = new AbortController();
+      let shortlinkTimeout = setTimeout(() => {
+          controller.abort();
+          showFloatingMessage('Permintaan shortlink timeout.', true);
+      }, 15000); // Batas waktu 15 detik
+
+      // LOGIKA SHORTLINK DITAMBAHKAN DI SINI
+      try {
+          showFloatingMessage('Mengambil shortlink...');
+          const getPhpUrl = `/proxy/get.php?send=${encodeURIComponent(mediaUrl)}&source=${encodeURIComponent(url)}`;
+          console.log('Mengambil shortlink dari:', getPhpUrl);
+
+          const getPhpResponse = await fetch(getPhpUrl, {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+              'User-Agent': 'TelegramBot (like TwitterBot)',
+              'Referer': 'https://shtl.pw'
+            },
+            signal: controller.signal
+          });
+          clearTimeout(shortlinkTimeout);
+
+          if (!getPhpResponse.ok) throw new Error(`HTTP ${getPhpResponse.status}`);
+
+          const contentType = getPhpResponse.headers.get('content-type') || '';
+
+          if (contentType.includes('application/json')) {
+            const getPhpData = await getPhpResponse.json();
+            if (getPhpData.status === 'success' && getPhpData.url) {
+              shortlink = getPhpData.url;
+              showFloatingMessage('Shortlink berhasil didapatkan!');
+            } else {
+              showFloatingMessage(`Gagal shortlink: ${getPhpData.message || 'Unknown'}`, true);
+            }
+          } else if (contentType.includes('video/') || contentType.includes('application/octet-stream')) {
+            const blob = await getPhpResponse.blob();
+            shortlink = URL.createObjectURL(blob);
+            showFloatingMessage('Video diterima langsung (fallback relay)!');
+          } else {
+            throw new Error(`Tipe konten tidak didukung: ${contentType}`);
+          }
+        } catch (error) {
+          clearTimeout(shortlinkTimeout); // Pastikan timeout dibersihkan jika error
+          if (error.name !== 'AbortError') {
+            showFloatingMessage(`Gagal shortlink: ${error.message}`, true);
+          }
+        }
+      // AKHIR LOGIKA SHORTLINK
 
       // Tampilkan Caption
       if (caption) {
         html += `<p id="captionText">${caption}</p>`;
-        html += `<button class="copy-btn" onclick="copyText('${caption.replace(/'/g, "\\'")}')">Salin Caption</button>`;
+        html += `<button class="copy-btn" onclick="copyText('${caption.replace(/'/g, "\\'")}', 'Caption')">Salin Caption</button>`;
       }
+
+      // Tombol Salin URL ditambahkan di sini
+      // Menggunakan variabel shortlink yang mungkin sudah diperbarui
+      html += `<button class="copy-btn" onclick="copyText('${shortlink.replace(/'/g, "\\'")}', 'URL Media')">Salin URL Media</button>`;
       
       // Tampilkan Media Preview (Video/Image)
       if (type === 'video') {
         html += `
           <div class="video-wrapper">
             <video id="videoPlayer" src="${mediaUrl}" controls poster="${previewUrl}" style="display:block;"></video>
-            <!-- Tautan download terpisah -->
             <a href="${mediaUrl}" class="download-btn" download>Download Video</a>
           </div>
         `;
@@ -422,20 +518,18 @@
       resultDiv.innerHTML = html;
     }
 
-    function copyText(text) {
+    function copyText(text, type = 'Teks') {
       const el = document.createElement('textarea');
       el.value = text;
       document.body.appendChild(el);
       el.select();
       try {
         const successful = document.execCommand('copy');
-        showMessage(successful ? 'Teks berhasil disalin!' : 'Gagal menyalin teks.', !successful);
+        showFloatingMessage(successful ? `${type} berhasil disalin!` : `Gagal menyalin ${type}.`, !successful);
       } catch (err) {
-        showMessage('Browser Anda tidak mendukung penyalinan otomatis.', true);
+        showFloatingMessage('Browser Anda tidak mendukung penyalinan otomatis.', true);
       }
       document.body.removeChild(el);
-      // Hapus pesan setelah 3 detik
-      setTimeout(() => { resultDiv.innerHTML = ''; }, 3000);
     }
 
     // --- Event Listeners ---
@@ -444,9 +538,9 @@
       try {
         const text = await navigator.clipboard.readText();
         urlInput.value = text.trim();
-        showMessage('Tautan berhasil ditempel.', false);
+        showFloatingMessage('Tautan berhasil ditempel.', false);
       } catch (err) {
-        showMessage('Akses clipboard ditolak atau tidak didukung.', true);
+        showFloatingMessage('Akses clipboard ditolak atau tidak didukung.', true);
       }
     });
 
@@ -475,7 +569,7 @@
         stopProgress(true);
 
         if (data.success) {
-          renderResult(data.data);
+          await renderResult(data.data); // Gunakan 'await' karena renderResult sekarang async
         } else {
           showMessage(`Gagal Download: ${data.error || 'Terjadi kesalahan tidak diketahui.'}`, true);
         }
@@ -488,6 +582,5 @@
     });
 
   </script>
-  <!-- Skrip di atas menggantikan <script type="module" src="/downloader.js"></script> -->
-</body>
+  </body>
 </html>
