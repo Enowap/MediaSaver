@@ -2,7 +2,24 @@
 // public/downloader.js
 // ESM Version – Browser-only (no Node.js)
 console.log('Downloader.js (ESM) telah dimuat');
-const API_BASE = 'https://api.ferdev.my.id/downloader';
+
+let API_KEY = ""; // default kosong
+const API_BASE = "https://api.ferdev.my.id/downloader";
+
+// Muat API_KEY dari server
+async function loadApiKey() {
+  try {
+    const res = await fetch("/api/config");
+    const data = await res.json();
+    API_KEY = data.API_KEY || "";
+    console.log("✅ API_KEY berhasil dimuat dari server:", API_KEY ? "OK" : "TIDAK ADA");
+  } catch (err) {
+    console.error("❌ Gagal memuat API_KEY:", err);
+  }
+}
+
+await loadApiKey();
+
 
 class Downloader {
   constructor() {}
