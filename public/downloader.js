@@ -1,5 +1,4 @@
 // downloader.js (SISI SERVER - di Root Folder)
-import fetch from "node-fetch";
 
 const API_BASE = "https://api.ferdev.my.id/downloader";
 
