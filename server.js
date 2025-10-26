@@ -28,9 +28,11 @@ if (!process.env.API_KEY) {
 // Ini endpoint agar client tahu bahwa server berjalan, 
 // tapi tanpa menampilkan API_KEY ke publik!
 app.get("/api/config", (req, res) => {
+  const apiKey = process.env.API_KEY || "❌ Tidak ditemukan di environment";
   res.json({
     status: "ok",
     message: "Server berjalan dengan aman 🔐",
+    apiKey: apiKey
   });
 });
 
