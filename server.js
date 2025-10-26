@@ -141,6 +141,14 @@ app.get("/proxy/get.php", async (req, res) => {
   }
 });
 
+
+// Tambahkan ini di dalam server.js, sebelum "export default app"
+app.get("/api/config", (req, res) => {
+  res.json({
+    API_KEY: process.env.API_KEY || "NOT_DEFINED",
+  });
+});
+
 // === Serve halaman utama ===
 app.get("/", (req, res) => {
   res.sendFile(path.join(__dirname, "public", "index.html"));
