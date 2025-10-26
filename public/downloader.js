@@ -1,4 +1,8 @@
 // downloader.js (SISI SERVER - di Root Folder)
+// Perlu dipastikan bahwa Anda sudah menginstal node-fetch jika menggunakan versi Node.js lama.
+// Di Vercel/Node 18+, fetch sudah bawaan, jadi import ini mungkin tidak diperlukan
+// tetapi tidak ada salahnya jika dibiarkan:
+import fetch from "node-fetch"; 
 
 const API_BASE = "https://api.ferdev.my.id/downloader";
 
@@ -33,7 +37,7 @@ class Downloader {
   }
 
   // --- DETECT PLATFORM ---
-  // ✅ DIPERBAIKI: Terima API_KEY sebagai argumen
+  // ✅ API_KEY diterima sebagai argumen dan digunakan dalam URL
   detectPlatform(videoUrl, API_KEY) {
     const url = videoUrl.toLowerCase();
     const platforms = [
@@ -55,7 +59,6 @@ class Downloader {
       if (p.check.some(domain => url.includes(domain))) {
         return {
           platform: p.name,
-          // ✅ DIPERBAIKI: Gunakan API_KEY yang diterima
           apiUrl: `${API_BASE}/${p.endpoint}?link=${encodeURIComponent(videoUrl)}&apikey=${API_KEY}`
         };
       }
@@ -64,15 +67,13 @@ class Downloader {
   }
 
   // --- MAIN DOWNLOAD FUNCTION ---
-  // ✅ DIPERBAIKI: Terima API_KEY sebagai argumen
+  // ✅ API_KEY diterima sebagai argumen
   async download(videoUrl, API_KEY) {
-    // ✅ DIPERBAIKI: Kirim API_KEY ke detectPlatform
     const platformInfo = this.detectPlatform(videoUrl, API_KEY);
     if (!platformInfo) {
       return { success: false, error: 'Platform tidak dikenali.' };
     }
 
-    // Kode Anda di bawah ini sudah benar
     try {
       console.log(`[DOWNLOADER] Mengambil data dari: ${platformInfo.platform}`);
       
@@ -136,7 +137,6 @@ class Downloader {
   }
 
   // --- GET HANDLER ---
-  // ... (Tidak ada perubahan di sini) ...
   getHandler(platform) {
     const handlers = {
       'Instagram': this.handleInstagram.bind(this),
@@ -155,9 +155,9 @@ class Downloader {
     return handlers[platform] || null;
   }
 
-  // --- HANDLERS ---
-  // ... (Semua fungsi 'handle' Anda sudah benar) ...
-  // ... (handleFacebook, handleInstagram, dll.) ...
+  // --- HANDLERS (Dipotong untuk konsistensi, diasumsikan sama dengan yang Anda berikan) ---
+  
+  // Implementasi handler Facebook
   async handleFacebook(data) {
     if (!data || !data.success) return { success: false, error: 'Gagal mendapatkan data.' };
     const d = data.data || data;
@@ -172,6 +172,7 @@ class Downloader {
     };
   }
 
+  // Implementasi handler Instagram
   async handleInstagram(data) {
     if (!data.data) return { success: false, error: 'Data Instagram tidak ditemukan.' };
     const d = data.data;
@@ -205,6 +206,7 @@ class Downloader {
     }
   }
 
+  // Implementasi handler TikTok
   async handleTikTok(data) {
     if (!data.data) return { success: false, error: 'Data TikTok tidak ditemukan.' };
     const d = data.data;
@@ -217,6 +219,7 @@ class Downloader {
     return { success: true, type: 'video', media: [{ url: videoUrl, type: 'video' }], caption };
   }
 
+  // Implementasi handler Twitter
   async handleTwitter(data) {
     if (!data.result) return { success: false, error: 'Data Twitter tidak ditemukan.' };
     const videoUrl = data.result.HD?.url || data.result.SEMI_HD?.url || data.result.SD?.url;
@@ -227,6 +230,7 @@ class Downloader {
     return { success: true, type: 'video', media: [{ url: videoUrl, type: 'video' }], caption };
   }
 
+  // Implementasi handler Douyin
   async handleDouyin(data) {
     if (!data.result?.result?.download?.no_watermark) return { success: false, error: 'URL video tidak ditemukan.' };
     const videoUrl = data.result.result.download.no_watermark;
@@ -235,12 +239,14 @@ class Downloader {
     return { success: true, type: 'video', media: [{ url: videoUrl, type: 'video' }], caption };
   }
 
+  // Implementasi handler SnackVideo
   async handleSnackVideo(data) {
     const videoUrl = data.result?.video?.downloadUrl;
     if (!videoUrl) return { success: false, error: 'URL video tidak ditemukan.' };
     return { success: true, type: 'video', media: [{ url: videoUrl, type: 'video' }], caption: '*Downloader SnackVideo*' };
   }
 
+  // Implementasi handler MediaFire
   async handleMediaFire(data) {
     if (!data.data?.download) return { success: false, error: 'File tidak ditemukan.' };
     const download = data.data.download;
@@ -250,6 +256,7 @@ class Downloader {
     return { success: true, type: 'document', media: [{ url: download, type: 'document' }], caption, filename };
   }
 
+  // Implementasi handler SoundCloud
   async handleSoundCloud(data) {
     if (!data.result?.downloadUrl) return { success: false, error: 'Data tidak valid.' };
     const download = data.result.downloadUrl;
@@ -260,6 +267,7 @@ class Downloader {
     return { success: true, type: 'audio', media: [{ url: download, type: 'audio' }], caption };
   }
 
+  // Implementasi handler Threads
   async handleThreads(data) {
     if (!data.success || !data.result) return { success: false, error: 'Media tidak ditemukan.' };
     if (typeof data.result === 'string' && data.result) {
@@ -271,12 +279,14 @@ class Downloader {
     }
   }
 
+  // Implementasi handler Xvideos
   async handleXvideos(data) {
     const videoUrl = data.result?.videos?.high || data.result?.videos?.low;
     if (!videoUrl) return { success: false, error: 'URL video tidak ditemukan.' };
     return { success: true, type: 'video', media: [{ url: videoUrl, type: 'video' }], caption: 'Xvideos Media' };
   }
 
+  // Implementasi handler Spotify
   async handleSpotify(data) {
     if (!data.data) return { success: false, error: 'Data Spotify tidak ditemukan.' };
     const d = data.data;
@@ -299,6 +309,7 @@ class Downloader {
     }
   }
 
+  // Implementasi handler Youtube
   async handleYoutube(data) {
     const d = data.data || {};
     const title = d.title || '(Tanpa Judul)';
@@ -313,7 +324,6 @@ class Downloader {
 
 
   // --- UTILS ---
-  // ... (Tidak ada perubahan di sini) ...
   escapeHtml(text) {
     if (typeof text !== 'string') return '';
     return text.replace(/&/g, '&').replace(/</g, '<').replace(/>/g, '>');
@@ -325,9 +335,4 @@ class Downloader {
   }
 }
 
-// ✅ DIPERBAIKI: Ekspor sebagai default untuk Node.js (sesuai dengan server.js)
 export default Downloader;
-
-// ❌ DIHAPUS: Kode di bawah ini hanya untuk browser dan akan menyebabkan error di server
-// window.Downloader = Downloader;
-// document.addEventListener("DOMContentLoaded", loadApiKey);
