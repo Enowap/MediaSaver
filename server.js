@@ -25,6 +25,16 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
+
+
+// === API CONFIG ENDPOINT ===
+app.get("/api/config", (req, res) => {
+  res.json({
+    API_KEY: process.env.API_KEY || "NOT_DEFINED",
+  });
+});
+
+
 // === API ENDPOINT: /api/download ===
 app.post("/api/download", async (req, res) => {
   const { url } = req.body;
