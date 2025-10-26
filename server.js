@@ -1,8 +1,10 @@
+// server.js
 import express from "express";
 import path from "path";
 import cors from "cors";
-import Downloader from "./downloader.js"; // pastikan ada ekstensi .js
+import Downloader from "./downloader.js";
 import dotenv from "dotenv";
+import fetch from "node-fetch"; // ✅ WAJIB agar fetch dikenali
 import { fileURLToPath } from "url";
 
 dotenv.config();
@@ -13,7 +15,7 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const downloader = new Downloader();
 
-// Middleware
+// === Middleware ===
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
@@ -66,7 +68,7 @@ app.post("/api/download", async (req, res) => {
   }
 });
 
-// === PROXY UNTUK SHORTLINK (get.php) ===
+// === PROXY UNTUK SHORTLINK ===
 app.get("/proxy/get.php", async (req, res) => {
   const { send, source } = req.query;
 
@@ -88,7 +90,7 @@ app.get("/proxy/get.php", async (req, res) => {
     try {
       data = JSON.parse(text);
     } catch {
-      console.error("Respon bukan JSON, isi:", text.slice(0, 100));
+      console.error("Respon bukan JSON:", text.slice(0, 100));
       return res.status(500).json({
         status: "error",
         message: "Respon dari server shortlink tidak valid JSON.",
