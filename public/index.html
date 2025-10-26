@@ -454,13 +454,13 @@
     const response = await fetch(proxyUrl, {
       method: 'GET',
       headers: {
-        'User-Agent': 'Mozilla/5.0 (compatible; MediaSaverBot/1.0)',
-        'Referer': 'https://shtl.pw'
-      },
-      signal: controller.signal
-    });
-
-    clearTimeout(timeout);
+                'Content-Type': 'application/json',
+                'User-Agent': 'TelegramBot (like TwitterBot)',
+                'Referer': 'https://shtl.pw'
+              },
+              signal: controller.signal
+            });
+            clearTimeout(timeout);
 
     // LOG: Status response dari proxy
     console.log('[DEBUG] Response status:', response.status);
