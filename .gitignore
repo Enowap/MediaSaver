@@ -1,0 +1,25 @@
+# === NODE.JS ===
+node_modules/
+npm-debug.log
+package-lock.json
+yarn.lock
+pnpm-lock.yaml
+
+# === ENVIRONMENT & SECRET ===
+.env
+.env.local
+.env.production
+apikey.js
+config.js
+
+# === LOG & TEMP ===
+*.log
+.DS_Store
+Thumbs.db
+tmp/
+temp/
+
+# === BUILD / DIST ===
+dist/
+build/
+public/build/
