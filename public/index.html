@@ -190,7 +190,7 @@
       width: 0;
       height: 100%;
       background: linear-gradient(90deg, #00f2ff, #ff4081);
-      transition: width 0.4s ease;
+      transition: width 0.woorden4s ease;
     }
     #progressText {
       color: #ccc;
@@ -332,58 +332,20 @@
   </div>
 
   <script type="module">
+    // Import ESM Downloader
     import Downloader from './downloader.js';
 
-// === CEK SERVER DAN DOWNLOADER ===
-(async () => {
-  try {
-    console.log("🔍 Memeriksa status server...");
-    const serverCheck = await fetch('/api/download', {
-      method: 'OPTIONS'
-    });
-
-    if (serverCheck.ok) {
-      console.log("✅ Server.js telah berjalan di Vercel.");
-    } else {
-      console.warn("⚠️ Server.js tidak merespons dengan benar (status: " + serverCheck.status + ")");
-    }
-  } catch (err) {
-    console.error("❌ Gagal menghubungi server.js:", err.message);
-    console.log("File tidak ditemukan pada lokal (server.js)");
-  }
-
-  try {
-    const downloaderExists = await fetch('/downloader.js', { method: 'HEAD' });
-    if (downloaderExists.ok) {
-      console.log("✅ Downloader.js telah berjalan.");
-    } else {
-      console.warn("⚠️ Downloader.js tidak ditemukan atau tidak dapat diakses.");
-      console.log("File tidak ditemukan pada lokal (downloader.js)");
-    }
-  } catch (err) {
-    console.error("❌ Gagal memeriksa downloader.js:", err.message);
-    console.log("File tidak ditemukan pada lokal (downloader.js)");
-  }
-})();
-
     // === UTILS ===
-    function showFloatingMessage(text) {
+    const showFloatingMessage = (text) => {
       const msg = document.createElement('div');
       msg.textContent = text;
       Object.assign(msg.style, {
-        position: 'fixed',
-        top: '50%',
-        left: '50%',
+        position: 'fixed', top: '50%', left: '50%',
         transform: 'translate(-50%, -50%)',
-        background: 'rgba(0, 0, 0, 0.8)',
-        color: '#fff',
-        padding: '12px 20px',
-        borderRadius: '12px',
-        fontSize: '16px',
-        fontWeight: 'bold',
-        zIndex: '9999',
-        opacity: '0',
-        transition: 'opacity 0.3s ease'
+        background: 'rgba(0,0,0,0.8)', color: '#fff',
+        padding: '12px 20px', borderRadius: '12px',
+        fontSize: '16px', fontWeight: 'bold', zIndex: '9999',
+        opacity: '0', transition: 'opacity 0.3s ease'
       });
       document.body.appendChild(msg);
       requestAnimationFrame(() => msg.style.opacity = '1');
@@ -391,14 +353,14 @@
         msg.style.opacity = '0';
         setTimeout(() => msg.remove(), 500);
       }, 3000);
-    }
+    };
 
-    function extractValidUrl(text) {
+    const extractValidUrl = (text) => {
       const match = text.match(/(https?:\/\/(?:www\.|vm\.)?(facebook\.com|instagram\.com|tiktok\.com|vm\.tiktok\.com|twitter\.com|x\.com)\/[^\s"']+)/i);
       return match ? match[0].replace(/[.,!?]+$/, '').trim() : null;
-    }
+    };
 
-    // === PASTE ===
+    // === PASTE BUTTON ===
     document.getElementById('pasteBtn').addEventListener('click', async () => {
       const input = document.getElementById('urlInput');
       const result = document.getElementById('result');
@@ -437,15 +399,10 @@
         progressBar.style.width = p + '%';
       }, 300);
 
-      let mediaUrl = '', mediaType = '', preview = '', caption = '', resolution = '', shortlink = '';
-
       try {
-        const res = await fetch('/api/download', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ url })
-        });
-        const data = await res.json();
+        // Gunakan Downloader.js langsung (tidak perlu /api/download)
+        const downloader = new Downloader();
+        const data = await downloader.download(url);
 
         clearInterval(simulate);
         progressBar.style.width = '100%';
@@ -454,104 +411,17 @@
           progressBar.style.width = '0%';
         }, 500);
 
-        if (!data.success || !data.data?.media?.[0]?.url) {
+        if (!data.success || !data.media?.[0]?.url) {
           throw new Error(data.error || 'Media tidak ditemukan');
         }
 
-        const media = data.data.media[0];
-        mediaUrl = media.url || '';
-        mediaType = media.type || (mediaUrl.includes('.mp4') ? 'video' : 'image');
-        preview = data.data.preview || 'https://via.placeholder.com/400x300/111/fff?text=No+Preview';
-        caption = data.data.caption || '';
-        resolution = media.resolution || 'HD';
+        const media = data.media[0];
+        const mediaUrl = media.url;
+        const mediaType = media.type || (mediaUrl.includes('.mp4') ? 'video' : 'image');
+        const preview = data.thumbnail || mediaUrl;
+        const caption = data.caption || 'Tidak ada caption';
 
-        // === GENERATE THUMBNAIL IF VIDEO & NO PREVIEW ===
-        if (!data.data.preview && mediaType === 'video' && mediaUrl) {
-          const video = document.createElement('video');
-          video.crossOrigin = 'anonymous';
-          video.src = mediaUrl;
-          video.preload = 'metadata';
-          video.style.display = 'none';
-          document.body.appendChild(video);
-
-          await new Promise((resolve) => {
-            let captured = false;
-
-            const captureFrame = () => {
-              if (captured) return;
-              captured = true;
-
-              try {
-                if (video.videoWidth > 0 && video.videoHeight > 0) {
-                  const canvas = document.createElement('canvas');
-                  canvas.width = video.videoWidth;
-                  canvas.height = video.videoHeight;
-                  const ctx = canvas.getContext('2d');
-                  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
-                  preview = canvas.toDataURL('image/jpeg');
-                }
-              } catch (err) {
-                console.warn('Gagal capture thumbnail:', err);
-              } finally {
-                video.remove();
-                resolve();
-              }
-            };
-
-            video.addEventListener('loadeddata', () => {
-              video.currentTime = Math.min(1, video.duration / 2 || 1);
-            });
-            video.addEventListener('seeked', captureFrame);
-            video.onerror = () => { video.remove(); resolve(); };
-            video.load();
-          });
-        }
-
-        // === SHORTLINK LOGIC WITH FALLBACK RELAY ===
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-
-        try {
-          const getPhpUrl = `/proxy/get.php?send=${encodeURIComponent(mediaUrl)}&source=${encodeURIComponent(url)}`;
-          console.log('Mengambil shortlink dari:', getPhpUrl);
-
-          const getPhpResponse = await fetch(getPhpUrl, {
-            method: 'GET',
-            headers: {
-              'Content-Type': 'application/json',
-              'User-Agent': 'TelegramBot (like TwitterBot)',
-              'Referer': 'https://shtl.pw'
-            },
-            signal: controller.signal
-          });
-          clearTimeout(timeout);
-
-          if (!getPhpResponse.ok) throw new Error(`HTTP ${getPhpResponse.status}`);
-
-          const contentType = getPhpResponse.headers.get('content-type') || '';
-
-          if (contentType.includes('application/json')) {
-            const getPhpData = await getPhpResponse.json();
-            if (getPhpData.status === 'success' && getPhpData.url) {
-              shortlink = getPhpData.url;
-              showFloatingMessage('Shortlink berhasil didapatkan!');
-            } else {
-              showFloatingMessage(`Gagal shortlink: ${getPhpData.message || 'Unknown'}`);
-            }
-          } else if (contentType.includes('video/') || contentType.includes('application/octet-stream')) {
-            const blob = await getPhpResponse.blob();
-            shortlink = URL.createObjectURL(blob);
-            showFloatingMessage('Video diterima langsung (fallback relay)!');
-          } else {
-            throw new Error(`Tipe konten tidak didukung: ${contentType}`);
-          }
-        } catch (error) {
-          if (error.name !== 'AbortError') {
-            showFloatingMessage(`Gagal shortlink: ${error.message}`);
-          }
-        }
-
-        // === RENDER RESULT ===
+        // Render hasil
         result.innerHTML = `
           <div class="video-wrapper">
             <img src="${preview}" alt="Preview" class="thumbnail" id="thumb">
@@ -563,20 +433,16 @@
               </div>
             ` : '<img id="imagePreview" style="display:none;width:100%;max-height:400px;border-radius:12px;">'}
           </div>
-          <div id="captionText"></div>
-          <p><strong>Resolusi:</strong> ${resolution}</p>
+          <div id="captionText">${caption.replace(/\n/g, '<br>')}</div>
           <a href="${mediaUrl}" class="download-btn" data-url="${mediaUrl}">Download Media</a>
-          ${shortlink ? `
-            <button class="copy-btn" onclick="navigator.clipboard.writeText('${shortlink}').then(() => showFloatingMessage('Shortlink disalin!'))">
-              Copy Shortlink
-            </button>
-          ` : '<p class="error">Shortlink tidak tersedia.</p>'}
+          <button class="copy-btn" onclick="navigator.clipboard.writeText('${mediaUrl}').then(() => showFloatingMessage('Link disalin!'))">
+            Copy Link
+          </button>
         `;
 
-        // === DISPLAY MEDIA ===
+        // Tampilkan media
         const videoPlayer = document.getElementById('videoPlayer');
         const imagePreview = document.getElementById('imagePreview');
-        const captionText = document.getElementById('captionText');
 
         if (mediaType === 'video') {
           videoPlayer.src = mediaUrl;
@@ -586,45 +452,26 @@
           imagePreview.style.display = 'block';
         }
 
-        captionText.innerHTML = caption ? caption.replace(/\n/g, '<br>') : '';
-
-        // === VIDEO PLAYER LOGIC ===
+        // Video player logic
         if (mediaType === 'video') {
           const playBtn = document.getElementById('playBtn');
           const videoContainer = document.getElementById('videoContainer');
           const loadingText = document.getElementById('loadingText');
           const thumb = document.getElementById('thumb');
 
-          if (playBtn && videoContainer && videoPlayer && thumb) {
-            const startVideo = () => {
-              playBtn.style.display = 'none';
-              thumb.style.display = 'none';
-              loadingText.style.display = 'block';
-              videoContainer.style.display = 'block';
-              setTimeout(() => {
-                loadingText.style.display = 'none';
-                videoPlayer.style.display = 'block';
-                videoPlayer.play().catch(() => {});
-              }, 800);
-            };
+          const startVideo = () => {
+            playBtn.style.display = 'none';
+            thumb.style.display = 'none';
+            loadingText.style.display = 'block';
+            videoContainer.style.display = 'block';
+            setTimeout(() => {
+              loadingText.style.display = 'none';
+              videoPlayer.style.display = 'block';
+              videoPlayer.play().catch(() => {});
+            }, 800);
+          };
 
-            playBtn.addEventListener('click', startVideo);
-
-            videoPlayer.addEventListener('click', () => {
-              if (videoPlayer.paused) {
-                videoPlayer.play();
-                playBtn.style.display = 'none';
-              } else {
-                videoPlayer.pause();
-                playBtn.style.display = 'flex';
-              }
-            });
-
-            videoPlayer.addEventListener('ended', () => {
-              playBtn.style.display = 'flex';
-              videoPlayer.currentTime = 0;
-            });
-          }
+          playBtn.addEventListener('click', startVideo);
         }
 
       } catch (err) {
