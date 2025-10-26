@@ -1,52 +1,49 @@
-// server.js
-const express = require('express');
-const path = require('path');
-const cors = require('cors');           // TAMBAHKAN INI
-const Downloader = require('./downloader');
-const { API_KEY } = require('./apikey');
+const express = require("express");
+const path = require("path");
+const cors = require("cors");
+const Downloader = require("./downloader");
+const { API_KEY } = require("./apikey");
 
 const app = express();
-const PORT = process.env.PORT || 3000;
 const downloader = new Downloader();
 
 // Middleware
-app.use(cors());                        // INI YANG WAJIB! BUKA CORS
+app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static("public"));
 
 // === API ENDPOINT: /api/download ===
-app.post('/api/download', async (req, res) => {
+app.post("/api/download", async (req, res) => {
   const { url } = req.body;
 
-  if (!url || typeof url !== 'string') {
-    return res.status(400).json({ success: false, error: 'URL diperlukan.' });
+  if (!url || typeof url !== "string") {
+    return res.status(400).json({ success: false, error: "URL diperlukan." });
   }
 
   try {
-    console.log('[SERVER] Mengunduh:', url);
+    console.log("[SERVER] Mengunduh:", url);
     const result = await downloader.download(url.trim());
 
-    // === VALIDASI HASIL ===
     if (!result || !result.success) {
-      const errorMsg = result?.error || 'Gagal mengambil data dari scraper';
-      console.warn('[SERVER] Gagal:', errorMsg);
+      const errorMsg = result?.error || "Gagal mengambil data dari scraper";
+      console.warn("[SERVER] Gagal:", errorMsg);
       return res.status(400).json({ success: false, error: errorMsg });
     }
 
     if (!Array.isArray(result.media) || result.media.length === 0 || !result.media[0]?.url) {
-      console.warn('[SERVER] Media kosong atau URL tidak valid:', result.media);
-      return res.status(400).json({ success: false, error: 'Tidak ada media ditemukan.' });
+      console.warn("[SERVER] Media kosong atau URL tidak valid:", result.media);
+      return res.status(400).json({ success: false, error: "Tidak ada media ditemukan." });
     }
 
     const mediaObj = result.media[0];
     const mediaUrl = mediaObj.url;
 
-    console.log('[SERVER] Sukses → URL:', mediaUrl);
+    console.log("[SERVER] Sukses → URL:", mediaUrl);
 
     const mediaItem = {
       url: mediaUrl,
-      type: mediaObj.type || (mediaUrl.includes('.mp4') ? 'video' : 'image'),
-      resolution: 'HD'
+      type: mediaObj.type || (mediaUrl.includes(".mp4") ? "video" : "image"),
+      resolution: "HD",
     };
 
     res.json({
@@ -54,13 +51,12 @@ app.post('/api/download', async (req, res) => {
       data: {
         media: [mediaItem],
         preview: result.thumbnail || mediaUrl,
-        caption: result.caption || ''
-      }
+        caption: result.caption || "",
+      },
     });
-
   } catch (err) {
-    console.error('[SERVER] ERROR:', err.message);
-    res.status(500).json({ success: false, error: 'Server error: ' + err.message });
+    console.error("[SERVER] ERROR:", err.message);
+    res.status(500).json({ success: false, error: "Server error: " + err.message });
   }
 });
 
@@ -72,7 +68,7 @@ app.get("/proxy/get.php", async (req, res) => {
     return res.status(400).json({ status: "error", message: "Missing 'send' parameter." });
   }
 
-  const targetUrl = `https://shtl.pw/getmylink/get.php?send=${send}&source=${source || ''}`;
+  const targetUrl = `https://shtl.pw/getmylink/get.php?send=${send}&source=${source || ""}`;
 
   try {
     const controller = new AbortController();
@@ -81,7 +77,17 @@ app.get("/proxy/get.php", async (req, res) => {
     const response = await fetch(targetUrl, { signal: controller.signal });
     clearTimeout(timeout);
 
-    const data = await response.json();
+    const text = await response.text();
+    let data;
+    try {
+      data = JSON.parse(text);
+    } catch {
+      console.error("Respon bukan JSON, isi:", text.slice(0, 100));
+      return res.status(500).json({
+        status: "error",
+        message: "Respon dari server shortlink tidak valid JSON.",
+      });
+    }
 
     if (data.status === "error" && /wrong type of the web page content/i.test(data.message || "")) {
       console.warn("Detected non-direct video content, attempting fallback relay...");
@@ -89,7 +95,6 @@ app.get("/proxy/get.php", async (req, res) => {
       try {
         const relayResponse = await fetch(send);
         const contentType = relayResponse.headers.get("content-type") || "video/mp4";
-
         res.setHeader("Content-Type", contentType);
         res.setHeader("Content-Disposition", 'inline; filename="video.mp4"');
         relayResponse.body.pipe(res);
@@ -114,10 +119,12 @@ app.get("/proxy/get.php", async (req, res) => {
 });
 
 // === Serve halaman utama ===
-app.get('/', (req, res) => {
-  res.sendFile(path.join(__dirname, 'public', 'index.html'));
+app.get("/", (req, res) => {
+  res.sendFile(path.join(__dirname, "public", "index.html"));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server berjalan di http://localhost:${PORT}`);
-});
+// ⛔ Hapus app.listen() saat di Vercel
+// app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// ✅ Export Express app ke Vercel
+module.exports = app;
