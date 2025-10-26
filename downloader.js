@@ -1,11 +1,13 @@
 // downloader.js
-const fs = require('fs').promises;
-const path = require('path');
-const { URL } = require('url');
-const API_KEY = process.env.API_KEY;
+// public/downloader.js
+// ESM Version – Tidak butuh Node.js (fs, path, dll)
+// Hanya pakai API browser: fetch, URL, console
+
+console.log('Downloader.js (ESM) telah dimuat');
+
+const API_KEY = import.meta.env?.VITE_API_KEY || 'YOUR_API_KEY_HERE'; // Ganti di .env atau Vercel
 const API_BASE = 'https://api.ferdev.my.id/downloader';
 
-console.log('🟢 Downloader.js telah berjalan'); // ✅ Tambahkan log ini
 
 
 class Downloader {
@@ -446,4 +448,6 @@ try {
     }
 }
 
-module.exports = Downloader;
+
+// EKSPOR UNTUK BROWSER (ESM)
+window.Downloader = Downloader;
