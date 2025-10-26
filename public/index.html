@@ -331,7 +331,41 @@
     <div id="result"></div>
   </div>
 
-  <script>
+
+
+<script>
+// === CEK SERVER DAN DOWNLOADER ===
+(async () => {
+  try {
+    console.log("🔍 Memeriksa status server...");
+    const serverCheck = await fetch('/api/download', {
+      method: 'OPTIONS'
+    });
+
+    if (serverCheck.ok) {
+      console.log("✅ Server.js telah berjalan di Vercel.");
+    } else {
+      console.warn("⚠️ Server.js tidak merespons dengan benar (status: " + serverCheck.status + ")");
+    }
+  } catch (err) {
+    console.error("❌ Gagal menghubungi server.js:", err.message);
+    console.log("File tidak ditemukan pada lokal (server.js)");
+  }
+
+  try {
+    const downloaderExists = await fetch('/downloader.js', { method: 'HEAD' });
+    if (downloaderExists.ok) {
+      console.log("✅ Downloader.js telah berjalan.");
+    } else {
+      console.warn("⚠️ Downloader.js tidak ditemukan atau tidak dapat diakses.");
+      console.log("File tidak ditemukan pada lokal (downloader.js)");
+    }
+  } catch (err) {
+    console.error("❌ Gagal memeriksa downloader.js:", err.message);
+    console.log("File tidak ditemukan pada lokal (downloader.js)");
+  }
+})();
+
     // === UTILS ===
     function showFloatingMessage(text) {
       const msg = document.createElement('div');
