@@ -60,6 +60,9 @@ class Downloader {
         return null;
     }
 
+
+
+
     // --- MAIN DOWNLOAD FUNCTION ---
     async download(videoUrl) {
         const platformInfo = this.detectPlatform(videoUrl);
@@ -69,8 +72,23 @@ class Downloader {
 
         try {
             console.log(`[DOWNLOADER] Mengambil data dari: ${platformInfo.platform}`);
+const response = await fetch(platformInfo.apiUrl);
+if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
             const response = await fetch(platformInfo.apiUrl);
-            if (!response.ok) throw new Error(`HTTP ${response.status}`);
+if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+// 🔹 Tambahkan validasi JSON aman
+const text = await response.text();
+let data;
+try {
+    data = JSON.parse(text);
+} catch (e) {
+    console.error('[DOWNLOADER] Respon bukan JSON:', text.slice(0, 200));
+    throw new Error('Respon API tidak valid (bukan JSON).');
+}
+            
+
             const data = await response.json();
 
             const handler = this.getHandler(platformInfo.platform);
