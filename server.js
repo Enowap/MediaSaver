@@ -15,6 +15,10 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const downloader = new Downloader();
 
+
+console.log('🟢 Server.js telah berjalan'); // ✅ Tambahkan log ini
+
+
 // === Middleware ===
 app.use(cors());
 app.use(express.json());
