@@ -80,8 +80,7 @@ class Downloader {
 const response = await fetch(platformInfo.apiUrl);
 if (!response.ok) throw new Error(`HTTP ${response.status}`);
 
-            const response = await fetch(platformInfo.apiUrl);
-if (!response.ok) throw new Error(`HTTP ${response.status}`);
+            
 
 // 🔹 Tambahkan validasi JSON aman
 const text = await response.text();
