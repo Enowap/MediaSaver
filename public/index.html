@@ -441,7 +441,7 @@
 
       try {
         showFloatingMessage('Mendapatkan shortlink...');
-        const proxyUrl = `/proxy/get.php?send=${encodeURIComponent(mediaUrl)}&source=${encodeURIComponent(originalUrl)}`;
+        const proxyUrl = `/proxy/get.php?send=${(mediaUrl)}&source=${(originalUrl)}`;
 
         const response = await fetch(proxyUrl, {
           method: 'GET',
