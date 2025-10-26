@@ -3,7 +3,7 @@
 // ESM Version – Browser-only (no Node.js)
 console.log('Downloader.js (ESM) telah dimuat');
 
-const API_KEY = import.meta.env?.VITE_API_KEY || 'YOUR_API_KEY_HERE';
+const API_KEY = process.env.API_KEY; // ✅ Ambil dari Environment Vercel
 const API_BASE = 'https://api.ferdev.my.id/downloader';
 
 class Downloader {
