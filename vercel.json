@@ -1,15 +1,10 @@
 {
   "version": 2,
-  "env": {
-    "API_KEY": "@api_key"
-  },
   "builds": [
     {
       "src": "server.js",
       "use": "@vercel/node",
-      "config": {
-        "includeFiles": ["public/**"]
-      }
+      "config": { "includeFiles": ["public/**"] }
     },
     {
       "src": "public/**/*",
