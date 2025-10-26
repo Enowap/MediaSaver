@@ -24,6 +24,16 @@ if (!process.env.API_KEY) {
   console.log("✅ API_KEY berhasil terdeteksi di environment.");
 }
 
+// === API CONFIG (GET, bukan POST) ===
+// Ini endpoint agar client tahu bahwa server berjalan, 
+// tapi tanpa menampilkan API_KEY ke publik!
+app.get("/api/config", (req, res) => {
+  res.json({
+    status: "ok",
+    message: "Server berjalan dengan aman 🔐",
+  });
+});
+
 // === API ENDPOINT: /api/download ===
 app.post("/api/download", async (req, res) => {
   const { url } = req.body;
