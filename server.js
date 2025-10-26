@@ -3,44 +3,35 @@ import express from "express";
 import path from "path";
 import cors from "cors";
 import Downloader from "./downloader.js";
-import dotenv from "dotenv";
-import fetch from "node-fetch"; // ✅ WAJIB agar fetch dikenali
+import fetch from "node-fetch";
 import { fileURLToPath } from "url";
 
-dotenv.config();
-
-console.log("🔐 API_KEY status:", process.env.API_KEY ? "Terdeteksi" : "TIDAK TERDETEKSI");
-
-
-const API_KEY = process.env.API_KEY; // ✅ Ambil dari Environment Vercel
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
 const downloader = new Downloader();
 
-
-console.log('🟢 Server.js telah berjalan'); // ✅ Tambahkan log ini
-
-
 // === Middleware ===
 app.use(cors());
 app.use(express.json());
 app.use(express.static(path.join(__dirname, "public")));
 
-
-
-// === API CONFIG ENDPOINT ===
-app.get("/api/config", (req, res) => {
-  res.json({
-    API_KEY: process.env.API_KEY || "NOT_DEFINED",
-  });
-});
-
+// === Cek status API_KEY di log (tidak dikirim ke client) ===
+if (!process.env.API_KEY) {
+  console.warn("❌ Environment variable API_KEY tidak ditemukan di Vercel!");
+} else {
+  console.log("✅ API_KEY berhasil terdeteksi di environment.");
+}
 
 // === API ENDPOINT: /api/download ===
 app.post("/api/download", async (req, res) => {
   const { url } = req.body;
+  const API_KEY = process.env.API_KEY;
+
+  if (!API_KEY) {
+    return res.status(500).json({ success: false, error: "API Key tidak tersedia di server." });
+  }
 
   if (!url || typeof url !== "string") {
     return res.status(400).json({ success: false, error: "URL diperlukan." });
@@ -48,7 +39,7 @@ app.post("/api/download", async (req, res) => {
 
   try {
     console.log("[SERVER] Mengunduh:", url);
-    const result = await downloader.download(url.trim());
+    const result = await downloader.download(url.trim(), API_KEY);
 
     if (!result || !result.success) {
       const errorMsg = result?.error || "Gagal mengambil data dari scraper";
@@ -142,14 +133,6 @@ app.get("/proxy/get.php", async (req, res) => {
       message: `Failed to connect to get.php: ${error.message}`,
     });
   }
-});
-
-
-// Tambahkan ini di dalam server.js, sebelum "export default app"
-app.get("/api/config", (req, res) => {
-  res.json({
-    API_KEY: process.env.API_KEY || "NOT_DEFINED",
-  });
 });
 
 // === Serve halaman utama ===
