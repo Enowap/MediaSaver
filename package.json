@@ -8,7 +8,7 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": ["downloader", "media", "scraper", "express"],
-  "author": "Your Name",
+  "author": "enowap",
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
