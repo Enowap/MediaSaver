@@ -4,6 +4,12 @@
 console.log('Downloader.js (ESM) telah dimuat');
 
 let API_KEY = ""; // default kosong
+
+const fs = require('fs').promises;
+const path = require('path');
+const { URL } = require('url');
+const { API_KEY } = require('./apikey');
+const API_BASE = 'https://api.ferdev.my.id/downloader';
 const API_BASE = "https://api.ferdev.my.id/downloader";
 
 // Muat API_KEY dari server
