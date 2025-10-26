@@ -2,7 +2,7 @@
 const fs = require('fs').promises;
 const path = require('path');
 const { URL } = require('url');
-const { API_KEY } = require('./apikey');
+const API_KEY = process.env.API_KEY;
 const API_BASE = 'https://api.ferdev.my.id/downloader';
 
 class Downloader {
