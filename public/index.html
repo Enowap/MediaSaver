@@ -373,10 +373,10 @@
 
     // === UTILS ===
     function extractValidUrl(text) {
-      const regex = /(https?:\/\/(?:www\.|vm\.)?(?:facebook\.com|instagram\.com|tiktok\.com|vm\.tiktok\.com|x\.com|twitter\.com)\/[^\s"'<>]+)/gi;
-      const matches = text.match(regex);
-      return matches ? matches[0].replace(/[.,!?]+$/, '').trim() : null;
-    }
+  const regex = /(https?:\/\/(?:www\.|vm\.|vt\.)?(?:facebook\.com|instagram\.com|tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com|x\.com|twitter\.com)\/[^\s"'<>]+)/gi;
+  const matches = text.match(regex);
+  return matches ? matches[0].replace(/[.,!?]+$/, '').trim() : null;
+}
 
     function showFloatingMessage(msg, isError = false) {
       clearTimeout(floatingTimeout);
