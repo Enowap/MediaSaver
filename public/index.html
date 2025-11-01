@@ -373,7 +373,7 @@
 
     // === UTILS ===
     function extractValidUrl(text) {
-  const regex = /(https?:\/\/(?:www\.|vm\.|vt\.)?(?:facebook\.com|instagram\.com|tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com|x\.com|twitter\.com)\/[^\s"'<>]+)/gi;
+  const regex = /(https?:\/\/(?:www\.)?(?:facebook\.com|instagram\.com|x\.com|twitter\.com|tiktok\.com|vm\.tiktok\.com|vt\.tiktok\.com)\/[^\s"'<>]+)/gi;
   const matches = text.match(regex);
   return matches ? matches[0].replace(/[.,!?]+$/, '').trim() : null;
 }
